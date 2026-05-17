@@ -1,6 +1,8 @@
+using FirstAPIConnectDB.DTOs;
+using FirstAPIConnectDB.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using FirstAPIConnectDB.Models;
+using AutoMapper;
 
 namespace FirstAPIConnectDB.Controllers
 {
@@ -10,25 +12,33 @@ namespace FirstAPIConnectDB.Controllers
     {
         private readonly LibraryDbContext _context;
         private readonly ILogger<AuthorsController> _logger;
+        private readonly IMapper _mapper;
 
-        public AuthorsController(LibraryDbContext context, ILogger<AuthorsController> logger)
+        public AuthorsController(
+            LibraryDbContext context
+            , ILogger<AuthorsController> logger
+            , IMapper mapper)
         {
             _context = context;
             _logger = logger;
+            _mapper = mapper;
         }
 
         /// <summary>
         /// Get all authors
         /// </summary>
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Author>>> GetAuthors()
+        public async Task<ActionResult<IEnumerable<AuthorDTO>>> GetAuthors()
         {
             try
             {
                 var authors = await _context.Authors
-                    .Include(a => a.Books)
+                    //.Skip(3) // thao tác tren danh sách
+                    .Include(a => a.Books) // thao tac DB
                     .ToListAsync();
-                return Ok(authors);
+
+                List<AuthorDTO> authorDTOs = _mapper.Map<List<AuthorDTO>>(authors);
+                return Ok(authorDTOs);
             }
             catch (Exception ex)
             {
@@ -67,7 +77,7 @@ namespace FirstAPIConnectDB.Controllers
         /// Create a new author
         /// </summary>
         [HttpPost]
-        public async Task<ActionResult<Author>> PostAuthor(Author author)
+        public async Task<ActionResult<Author>> PostAuthor(AuthorAddDTO author)
         {
             try
             {
@@ -80,11 +90,13 @@ namespace FirstAPIConnectDB.Controllers
                 {
                     return BadRequest("Author name is required");
                 }
+                                
+                var authorEntity = _mapper.Map<Author>(author);
 
-                _context.Authors.Add(author);
+                _context.Authors.Add(authorEntity);
                 await _context.SaveChangesAsync();
 
-                return CreatedAtAction("GetAuthor", new { id = author.AuthorId }, author);
+                return CreatedAtAction("GetAuthor", new { id = authorEntity.AuthorId }, author);
             }
             catch (Exception ex)
             {
@@ -111,11 +123,11 @@ namespace FirstAPIConnectDB.Controllers
                     return BadRequest("Author name is required");
                 }
 
-                _context.Entry(author).State = EntityState.Modified;
-
+                // _context.Entry(author).State = EntityState.Modified;
+                _context.Authors.Update(author);
                 try
                 {
-                    await _context.SaveChangesAsync();
+                    await _context.SaveChangesAsync(); // luu sau khi update
                 }
                 catch (DbUpdateConcurrencyException)
                 {

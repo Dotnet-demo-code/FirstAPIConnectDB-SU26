@@ -1,5 +1,6 @@
 
 
+using FirstAPIConnectDB.MappingConfigs;
 using FirstAPIConnectDB.Models;
 using System.Text.Json.Serialization;
 
@@ -10,6 +11,8 @@ builder.Services.AddControllers().AddJsonOptions(options =>
    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 builder.Services.AddDbContext<LibraryDbContext>();
 builder.Services.AddControllers();
+
+builder.Services.AddAutoMapper(cfg => { }, typeof(AutoMapperProfile));
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
